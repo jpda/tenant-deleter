@@ -47,8 +47,7 @@ namespace tenant_deleter
 
                 ).ExecuteAsync();
             }
-            request.Headers.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.AccessToken);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.AccessToken);
         }
     }
 }
