@@ -22,7 +22,7 @@ namespace tenant_deleter
             }
 
             var graph = new GraphServiceClient(new MsalTokenProvider(tenantId));
-            var td = new ThingDeleter(graph);
+            var td = new ThingDeleter(new ThingDeleterConfig() { GraphClient = graph, MaxPageSize = 1000 });
 
             await td.DeleteAllUsersFromTenant();
             await td.DeleteAllApplicationsFromTenant();
@@ -33,12 +33,23 @@ namespace tenant_deleter
         }
     }
 
+    public class ThingDeleterConfig
+    {
+        public GraphServiceClient GraphClient { get; set; }
+        public int MaxPageSize { get; set; } = 999;
+    }
+
     public class ThingDeleter
     {
+        private readonly Option ConsistencyLevelHeaderOption = new HeaderOption("ConsistencyLevel", "eventual");
+        private readonly Option CountQueryOption = new QueryOption("$count", "true");
+
         private readonly GraphServiceClient _graphServiceClient;
-        public ThingDeleter(GraphServiceClient client)
+        private readonly int _maxPageSize;
+        public ThingDeleter(ThingDeleterConfig config)
         {
-            _graphServiceClient = client;
+            _graphServiceClient = config.GraphClient;
+            _maxPageSize = config.MaxPageSize;
         }
 
         // delete all users from tenant
@@ -88,11 +99,14 @@ namespace tenant_deleter
 
         public async Task DeleteAllUsersFromTenant()
         {
+            Console.WriteLine("Deleting users - getting your user id so we don't delete you");
             var me = await _graphServiceClient.Me.Request().Select(x => x.Id).GetAsync();
-            var users = await _graphServiceClient.Users.Request()
+            var users = await _graphServiceClient.Users.Request(new[] { ConsistencyLevelHeaderOption, CountQueryOption })
                 .Select(x => x.Id)
-                .Top(20)
-            .GetAsync();
+                .Top(5)
+                .GetAsync();
+
+            Console.WriteLine($"{users.CurrentPage.Count} users found, deleting them");
 
             await DeleteEntities(users, user =>
             {
@@ -103,10 +117,9 @@ namespace tenant_deleter
 
         public async Task DeleteAllApplicationsFromTenant()
         {
-
-            var apps = await _graphServiceClient.Applications.Request()
+            var apps = await _graphServiceClient.Applications.Request(new[] { ConsistencyLevelHeaderOption })
                 .Select(x => x.Id)
-                .Top(20)
+                .Top(5)
             .GetAsync();
 
             await DeleteEntities(apps, (app) =>
@@ -131,6 +144,8 @@ namespace tenant_deleter
 
         public async Task DeleteEntities<T>(ICollectionPage<T> request, Func<T, string> deletionUrl, Func<T, bool> precheck = null) where T : DirectoryObject
         {
+            Console.WriteLine("Entering DeleteEntities, building batch...");
+            var totalSize = 0;
             var batch = new BatchRequestContent();
             var currentBatchStep = 1;
             var pageIterator = PageIterator<T>
@@ -139,6 +154,10 @@ namespace tenant_deleter
                 request,
                 (x) =>
                 {
+                    totalSize++;
+                    Console.CursorLeft = 0;
+                    Console.Write($"Processing {totalSize} of {request.AdditionalData["@odata.count"]}");
+                    Console.CursorLeft = 0;
                     if (precheck != null && precheck(x)) return true;
 
                     var httpDeleteUrl = deletionUrl(x);
@@ -149,7 +168,7 @@ namespace tenant_deleter
 
                     if (currentBatchStep == request.Count)
                     {
-                        _graphServiceClient.Batch.Request().PostAsync(batch).GetAwaiter().GetResult();
+                        //_graphServiceClient.Batch.Request().PostAsync(batch).GetAwaiter().GetResult();
                         currentBatchStep = 1; // batches are 1-indexed, weird
                         return true;
                     }
