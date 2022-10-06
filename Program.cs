@@ -99,11 +99,11 @@ namespace tenant_deleter
 
         public async Task DeleteAllUsersFromTenant()
         {
-            Console.WriteLine("Deleting users - getting your user id so we don't delete you");
+            Console.WriteLine($"Deleting users from tenant; max page request size: {_maxPageSize}");
             var me = await _graphServiceClient.Me.Request().Select(x => x.Id).GetAsync();
             var users = await _graphServiceClient.Users.Request(new[] { ConsistencyLevelHeaderOption, CountQueryOption })
                 .Select(x => x.Id)
-                .Top(5)
+                .Top(_maxPageSize)
                 .GetAsync();
 
             Console.WriteLine($"{users.CurrentPage.Count} users found, deleting them");
@@ -148,6 +148,7 @@ namespace tenant_deleter
             var totalSize = 0;
             var batch = new BatchRequestContent();
             var currentBatchStep = 1;
+            var maxBatchSize = 20;
             var pageIterator = PageIterator<T>
             .CreatePageIterator(
                 _graphServiceClient,
@@ -166,9 +167,9 @@ namespace tenant_deleter
                     var requestStep = new BatchRequestStep(currentBatchStep.ToString(), deleteRequest, null);
                     batch.AddBatchRequestStep(requestStep);
 
-                    if (currentBatchStep == request.Count)
+                    if (currentBatchStep == request.Count || currentBatchStep <= maxBatchSize)
                     {
-                        //_graphServiceClient.Batch.Request().PostAsync(batch).GetAwaiter().GetResult();
+                        _graphServiceClient.Batch.Request().PostAsync(batch).GetAwaiter().GetResult();
                         currentBatchStep = 1; // batches are 1-indexed, weird
                         return true;
                     }
