@@ -22,7 +22,7 @@ namespace tenant_deleter
             }
 
             var graph = new GraphServiceClient(new MsalTokenProvider(tenantId));
-            var td = new ThingDeleter(new ThingDeleterConfig() { GraphClient = graph, MaxPageSize = 1000 });
+            var td = new ThingDeleter(new ThingDeleterConfig() { GraphClient = graph, MaxPageSize = 999 });
 
             await td.DeleteAllUsersFromTenant();
             await td.DeleteAllApplicationsFromTenant();
