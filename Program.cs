@@ -24,6 +24,7 @@ namespace tenant_deleter
             var graph = new GraphServiceClient(new MsalTokenProvider(tenantId));
             var td = new ThingDeleter(new ThingDeleterConfig() { GraphClient = graph, MaxPageSize = 999 });
 
+
             await td.DeleteAllUsersFromTenant();
             //await td.DeleteAllApplicationsFromTenant();
             //await td.DeleteAllServicePrincipalsFromTenant();
@@ -99,7 +100,7 @@ namespace tenant_deleter
 
         public async Task DeleteAllUsersFromTenant()
         {
-            Console.WriteLine($"Deleting users from tenant; max page request size: {_maxPageSize}");
+            Console.WriteLine($"Entering DeleteAllUsersFromTenant; max page request size: {_maxPageSize}");
             var me = await _graphServiceClient.Me.Request().Select(x => x.Id).GetAsync();
             var users = await _graphServiceClient.Users.Request(new[] { ConsistencyLevelHeaderOption, CountQueryOption })
                 .Select(x => x.Id)
@@ -117,6 +118,7 @@ namespace tenant_deleter
 
         public async Task DeleteAllApplicationsFromTenant()
         {
+            Console.WriteLine("Entering DeleteAllApplicationsFromTenant");
             var apps = await _graphServiceClient.Applications.Request(new[] { ConsistencyLevelHeaderOption })
                 .Select(x => x.Id)
                 .Top(5)
@@ -130,6 +132,7 @@ namespace tenant_deleter
 
         public async Task DeleteAllServicePrincipalsFromTenant()
         {
+            Console.WriteLine("Entering DeleteAllServicePrincipalsFromTenant");
             var apps = await _graphServiceClient.ServicePrincipals.Request()
                 .Select(x => x.Id)
                 .Top(20)
