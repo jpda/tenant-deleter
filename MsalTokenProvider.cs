@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
+using Microsoft.Identity.Client.Extensions.Msal;
 
 namespace tenant_deleter
 {
@@ -12,17 +13,25 @@ namespace tenant_deleter
     {
         public readonly IPublicClientApplication _client;
         private readonly string[] _scopes = {
-             "https://graph.microsoft.com/User.ReadWrite.All"
+                "https://graph.microsoft.com/User.ReadWrite.All",
+                "offline_access"
             };
 
         public MsalTokenProvider(string tenantId)
         {
+            var storageProperties = new StorageCreationPropertiesBuilder("tenant_deleter", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
+                    .WithMacKeyChain("msal-tenant-deleter-cache", "msal-tenant-deleter-cache")
+                    .Build();
+
             _client = PublicClientApplicationBuilder
-               // mt app reg in separate tenant
-               // todo: move to config
-               .Create("67d892a5-2e0d-4fb5-88d4-5e5c75d774cb")
-               .WithAuthority($"https://login.microsoftonline.com/{tenantId}")
-               .Build();
+                // mt app reg in separate tenant
+                // todo: move to config
+                .Create("67d892a5-2e0d-4fb5-88d4-5e5c75d774cb")
+                .WithAuthority($"https://login.microsoftonline.com/{tenantId}")
+                .Build();
+
+            var cacheHelper = MsalCacheHelper.CreateAsync(storageProperties).Result;
+            cacheHelper.RegisterCache(_client.UserTokenCache);
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)

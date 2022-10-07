@@ -106,7 +106,7 @@ namespace tenant_deleter
                 .Top(_maxPageSize)
                 .GetAsync();
 
-            Console.WriteLine($"{users.CurrentPage.Count} users found, deleting them");
+            Console.WriteLine($"{users.AdditionalData["@odata.count"]} users found");
 
             await DeleteEntities(users, user =>
             {
@@ -144,11 +144,16 @@ namespace tenant_deleter
 
         public async Task DeleteEntities<T>(ICollectionPage<T> request, Func<T, string> deletionUrl, Func<T, bool> precheck = null) where T : DirectoryObject
         {
-            Console.WriteLine("Entering DeleteEntities, building batch...");
+            var sw = new System.Diagnostics.Stopwatch();
             var totalSize = 0;
             var batch = new BatchRequestContent();
             var currentBatchStep = 1;
+            var batchesSent = 0;
             var maxBatchSize = 20;
+
+            Console.WriteLine($"Starting at {DateTime.Now:o}");
+
+            sw.Start();
             var pageIterator = PageIterator<T>
             .CreatePageIterator(
                 _graphServiceClient,
@@ -157,8 +162,9 @@ namespace tenant_deleter
                 {
                     totalSize++;
                     Console.CursorLeft = 0;
-                    Console.Write($"Processing {totalSize} of {request.AdditionalData["@odata.count"]}");
-                    Console.CursorLeft = 0;
+                    Console.Write($"Sent {totalSize} requests in {batchesSent} batches of {request.AdditionalData["@odata.count"]} total to delete; elapsed: {sw.Elapsed:hh\\:mm\\:ss}");
+                    //Console.Write($"Sent {totalSize} requests in {batchesSent} batches; elapsed: {sw.Elapsed:hh\\:mm\\:ss\}");
+                    //Console.CursorLeft = 0;
                     if (precheck != null && precheck(x)) return true;
 
                     var httpDeleteUrl = deletionUrl(x);
@@ -167,10 +173,13 @@ namespace tenant_deleter
                     var requestStep = new BatchRequestStep(currentBatchStep.ToString(), deleteRequest, null);
                     batch.AddBatchRequestStep(requestStep);
 
-                    if (currentBatchStep == request.Count || currentBatchStep <= maxBatchSize)
+                    if (currentBatchStep == request.Count || currentBatchStep >= maxBatchSize)
                     {
-                        _graphServiceClient.Batch.Request().PostAsync(batch).GetAwaiter().GetResult();
+                        var result = _graphServiceClient.Batch.Request().PostAsync(batch).Result;//.GetAwaiter().GetResult();
                         currentBatchStep = 1; // batches are 1-indexed, weird
+                        batchesSent++;
+                        // create a new batch, lest we resend the same first batch over & over again
+                        batch = new BatchRequestContent();
                         return true;
                     }
                     currentBatchStep++;
