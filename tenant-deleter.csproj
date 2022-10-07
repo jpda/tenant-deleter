@@ -4,6 +4,10 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>tenant_deleter</RootNamespace>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,5 +15,9 @@
     <PackageReference Include="Microsoft.Identity.Client" Version="4.*" />
     <PackageReference Include="Microsoft.Identity.Client.Extensions.Msal" Version="2.24.0" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
 
 </Project>
