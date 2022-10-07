@@ -4,9 +4,9 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>tenant_deleter</RootNamespace>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
+    <SelfContained>true</SelfContained> -->
     <!-- <RuntimeIdentifier>win-x64</RuntimeIdentifier> -->
   </PropertyGroup>
 
