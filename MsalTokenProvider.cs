@@ -19,9 +19,9 @@ namespace tenant_deleter
 
         public MsalTokenProvider(string tenantId)
         {
-            var storageProperties = new StorageCreationPropertiesBuilder("tenant_deleter",
+            // todo: make sure the filename here doesn't clash with existing file/folder
+            var storageProperties = new StorageCreationPropertiesBuilder("tenant_deleter_token_cache",
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))
-
                     .WithMacKeyChain("msal-tenant-deleter-cache", "msal-tenant-deleter-cache")
                     .Build();
 
