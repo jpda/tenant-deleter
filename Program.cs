@@ -25,8 +25,8 @@ namespace tenant_deleter
             var td = new ThingDeleter(new ThingDeleterConfig() { GraphClient = graph, MaxPageSize = 999 });
 
             await td.DeleteAllUsersFromTenant();
-            await td.DeleteAllApplicationsFromTenant();
-            await td.DeleteAllServicePrincipalsFromTenant();
+            //await td.DeleteAllApplicationsFromTenant();
+            //await td.DeleteAllServicePrincipalsFromTenant();
 
             Console.WriteLine("*fin*");
             Console.ReadLine();
